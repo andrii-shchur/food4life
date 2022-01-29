@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, Recipe, Product, Category, Ingredient, Rating
+from .models import *
 
 
 class UserSerializer(serializers.ModelSerializer):
