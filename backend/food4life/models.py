@@ -2,6 +2,7 @@ from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 
 
+# напевно юзлесна модель, будем юзати django.contrib.auth.models.User
 class User(models.Model):
     fname = models.CharField(max_length=64)
     lname = models.CharField(max_length=64)
@@ -15,9 +16,9 @@ class User(models.Model):
 class Recipe(models.Model):
     difficulty = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
     description = models.CharField(max_length=500)
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=100, unique=True)
     type = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(3)])
-    img_path = models.CharField(max_length=255)
+    img_path = models.CharField(max_length=255, unique=True)
     # тут est_time в хвилинах
     est_time = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(300)])
 
@@ -26,8 +27,8 @@ class Recipe(models.Model):
 
 
 class Product(models.Model):
-    name = models.CharField(max_length=100)
-    img_path = models.CharField(max_length=255)
+    name = models.CharField(max_length=100, unique=True)
+    img_path = models.CharField(max_length=255, unique=True)
     price = models.DecimalField(max_digits=10, decimal_places=2)
     proteins = models.DecimalField(max_digits=10, decimal_places=2)
     fats = models.DecimalField(max_digits=10, decimal_places=2)
