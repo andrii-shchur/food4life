@@ -1,2 +1,5 @@
 Django==4.0.1
 djangorestframework==3.13.1
+opencv-python==4.5.5.62
+numpy==1.22.2
+Pillow==9.0.1
