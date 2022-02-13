@@ -87,4 +87,4 @@ def predict(file):
 
     except Exception as e:
         print(e)
-        return {'error': 'Make sure an image is passed!'}
+        return {'message': 'Make sure an image is passed!'}

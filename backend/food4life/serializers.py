@@ -1,39 +1,27 @@
 from rest_framework import serializers
 from .models import *
-from .models import User
 
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('id', 'first_name', 'last_name', 'email', 'password')
+        fields = ('id', 'first_name', 'last_name', 'email', 'password1', 'password2',)
 
 
 class RecipeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Recipe
-        fields = ('id', 'difficulty', 'description', 'name', 'type', 'img_path', 'est_time')
-
-
-class ProductSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Product
-        fields = ('id', 'name', 'img_path', 'price', 'proteins', 'fats', 'carbs', 'measure_type')
-
-
-class CategorySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Category
-        fields = ('id', 'alias', 'product_id')
+        fields = ('id', 'difficulty', 'description', 'name', 'img_path', 'calories', 'proteins', 'fats', 'carbs',
+                  'est_time', 'yields',)
 
 
 class IngredientSerializer(serializers.ModelSerializer):
     class Meta:
         model = Ingredient
-        fields = ('id', 'amount', 'product_id', 'recipe_id')
+        fields = ('id', 'recipe_id', 'description',)
 
 
 class RatingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Rating
-        fields = ('id', 'rating', 'recipe_id', 'user_id')
+        fields = ('id', 'user', 'recipe_id', 'rating',)

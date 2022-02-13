@@ -1,4 +1,8 @@
+import json
+import random
+
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -21,24 +25,6 @@ def register(request):
         return Response(form.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-# test method
-@api_view(['GET', 'POST'])
-def product(request):
-    # creates product
-    if request.method == 'POST':
-        serializer = ProductSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    # returns all products
-    elif request.method == 'GET':
-        products = Product.objects.all()
-        serializer = ProductSerializer(products, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-
 @api_view(['POST'])
 def log_out(request):
     if request.method == 'POST':
@@ -52,6 +38,22 @@ def log_out(request):
             return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
+@api_view(['GET'])
+def recipe(request, id):
+    if request.method == 'GET':
+        recipe = Recipe.objects.get(pk=id)
+        recipe_serializer = RecipeSerializer(recipe)
+        ingredients = Ingredient.objects.filter(recipe=recipe)
+        ingredients_serializer = IngredientSerializer(ingredients, many=True)
+
+        result = dict(recipe_serializer.data)
+        result['ingredients'] = []
+        for el in ingredients_serializer.data:
+            result['ingredients'].append(el['description'])
+
+        return Response(result, status=status.HTTP_200_OK)
+
+
 @api_view(['POST'])
 def get_prediction(request):
     if request.method == 'POST':
@@ -60,3 +62,43 @@ def get_prediction(request):
             result = predict(request.FILES['file'])
             return Response(result, status=status.HTTP_200_OK)
         return Response(form.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def fill_db(request):
+    # recipes = Recipe.objects.all()
+    # recipes.delete()
+    # ingredients = Ingredient.objects.all()
+    # ingredients.delete()
+    with request.FILES['file'] as f:
+        data = json.loads(f.read())
+        for el in data:
+            recipe = Recipe()
+            recipe.difficulty = random.randint(1, 5)
+            recipe.description = el['instructions']
+            recipe.name = el['title']
+            recipe.img_path = el['image']
+            recipe.est_time = el['total_time']
+            try:
+                recipe.calories = el['nutrients']['calories']
+                recipe.proteins = el['nutrients']['proteinContent']
+                recipe.fats = el['nutrients']['fatContent']
+                recipe.carbs = el['nutrients']['carbohydrateContent']
+                recipe.yields = el['yields']
+            except (KeyError, TypeError,):
+                pass
+
+            try:
+                recipe.save()
+            except Exception as e:
+                print(e)
+                continue
+
+            for i in el['ingredients']:
+                ingredient = Ingredient()
+                ingredient.recipe = recipe
+                ingredient.description = i
+                ingredient.save()
+
+    return Response()
