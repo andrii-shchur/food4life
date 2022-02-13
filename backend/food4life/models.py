@@ -1,16 +1,47 @@
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.conf import settings
+from django.contrib.auth.models import AbstractUser, BaseUserManager
 
 
-# напевно юзлесна модель, будем юзати django.contrib.auth.models.User
-class User(models.Model):
-    fname = models.CharField(max_length=64)
-    lname = models.CharField(max_length=64)
-    email = models.EmailField()
-    password = models.BinaryField(max_length=60)
+class UserManager(BaseUserManager):
+    def create_user(self, email, password=None):
+        if not email:
+            raise ValueError('Users must have email')
+
+        user = self.model(
+            email=self.normalize_email(email),
+        )
+
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, email, password=None):
+        user = self.create_user(
+            email=self.normalize_email(email),
+            password=password,
+        )
+
+        user.is_admin = True
+        user.is_staff = True
+        user.is_superuser = True
+
+        user.save(using=self._db)
+        return user
+
+
+class User(AbstractUser):
+    username = None
+    email = models.EmailField(unique=True)
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = []
+
+    objects = UserManager()
 
     def __str__(self):
-        return f'{self.fname} {self.lname} {self.email}'
+        return f'{self.first_name} {self.last_name}'
 
 
 class Recipe(models.Model):
@@ -58,9 +89,9 @@ class Ingredient(models.Model):
 
 
 class Rating(models.Model):
-    user_id = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True)
     recipe_id = models.ForeignKey(Recipe, on_delete=models.CASCADE)
     rating = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
 
     def __str__(self):
-        return f'user_id:{self.user_id} recipe_id:{self.recipe_id} rating:{self.rating}'
+        return f'user:{self.user} recipe_id:{self.recipe_id} rating:{self.rating}'
