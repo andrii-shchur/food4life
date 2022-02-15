@@ -13,6 +13,8 @@ from .forms import *
 
 from .object_detection.main import predict
 
+from .filtermanager import FilterManager
+
 
 @api_view(['POST'])
 @permission_classes([])
@@ -131,6 +133,7 @@ def add_or_remove_favourites(request, user_id, recipe_id):
 
 
 @api_view(['GET'])
+@permission_classes([])
 def get_favourites_by_user_id(request, user_id):
     user = User.objects.filter(pk=user_id)
     if user:
@@ -142,3 +145,16 @@ def get_favourites_by_user_id(request, user_id):
             result.append(dict(serialized_recipe.data))
         return Response(result, status=status.HTTP_200_OK)
     return Response({'message': 'The user does not exist.'}, status=status.HTTP_404_NOT_FOUND)
+
+
+# development purposes only.
+@api_view(['GET'])
+@permission_classes([])
+def temp(request):
+    fm = FilterManager()
+    recipes = Recipe.objects.all()
+    result = []
+    recipes = fm.apply_filters(['order_by_difficulty_desc'], recipes)
+    for el in recipes:
+        result.append(dict(RecipeSerializer(el).data))
+    return Response(result, status.HTTP_200_OK)
