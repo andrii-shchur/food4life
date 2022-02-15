@@ -25,3 +25,9 @@ class RatingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Rating
         fields = ('id', 'user', 'recipe_id', 'rating',)
+
+
+class FavouritesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Favourites
+        fields = ('id', 'user_id', 'recipe_id',)

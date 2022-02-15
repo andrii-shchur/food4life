@@ -102,3 +102,43 @@ def fill_db(request):
                 ingredient.save()
 
     return Response()
+
+
+@api_view(['DELETE', 'POST'])
+def add_or_remove_favourites(request, user_id, recipe_id):
+    fav_db_entry = Favourites.objects.filter(user_id=user_id, recipe_id=recipe_id)
+    if request.method == 'POST':
+        if fav_db_entry:
+            return Response({'message': 'The recipe is already in favourites.'}, status=status.HTTP_400_BAD_REQUEST)
+        fav = Favourites()
+        user = User.objects.filter(pk=user_id)
+        recipe = Recipe.objects.filter(pk=recipe_id)
+        if user:
+            if recipe:
+                fav.user = user.get()
+                fav.recipe = recipe.get()
+                fav.save()
+                return Response({'message': 'The recipe has been successfully added to favourite list.'},
+                                status=status.HTTP_201_CREATED)
+            return Response({'message': 'The recipe does not exist.'}, status=status.HTTP_404_NOT_FOUND)
+        return Response({'message': 'The user does not exist.'}, status=status.HTTP_404_NOT_FOUND)
+
+    elif request.method == 'DELETE':
+        if fav_db_entry:
+            fav_db_entry.delete()
+            return Response({'message': 'The recipe has been removed from favourites.'}, status=status.HTTP_200_OK)
+        return Response({'message': 'The recipe does not exist.'}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['GET'])
+def get_favourites_by_user_id(request, user_id):
+    user = User.objects.filter(pk=user_id)
+    if user:
+        result = []
+        user_favs = Favourites.objects.filter(user_id=user_id)
+        for fav in user_favs:
+            recipe = Recipe.objects.get(pk=fav.recipe_id)
+            serialized_recipe = RecipeSerializer(recipe)
+            result.append(dict(serialized_recipe.data))
+        return Response(result, status=status.HTTP_200_OK)
+    return Response({'message': 'The user does not exist.'}, status=status.HTTP_404_NOT_FOUND)
