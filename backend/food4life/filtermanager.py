@@ -23,4 +23,3 @@ class FilterManager:
 
     def order_by_rating_desc(self, query_set):
         return query_set.order_by('-rating')
-
