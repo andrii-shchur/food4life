@@ -1,14 +1,12 @@
-import json
-from sys import path
-
+from os import path
 import cv2
 import io
 import numpy as np
 from PIL import Image
 
-CLASSNAMES_PATH = path[0] + "\\food4life\\object_detection\\model\\obj.names"
-CONFIG_PATH = path[0] + "\\food4life\\object_detection\\model\\yolov4-config.cfg"
-WEIGHTS_PATH = path[0] + "\\food4life\\object_detection\\model\\yolov4.weights"
+CLASSNAMES_PATH = path.join(path.dirname(__file__), "model/obj.names")
+CONFIG_PATH = path.join(path.dirname(__file__), "model/yolov4-config.cfg")
+WEIGHTS_PATH = path.join(path.dirname(__file__), "model/yolov4.weights")
 
 CONFIDENCE_THRESHOLD = 0.3
 nmsthres = 0.1
@@ -29,13 +27,15 @@ class YoloModel:
         self.labels = self.get_labels()
         self.model = self.load_model()
 
-    def get_labels(self):
+    @staticmethod
+    def get_labels():
         f = open(CLASSNAMES_PATH, "r")
         c = f.read()
         f.close()
         return c.split('\n')
 
-    def load_model(self):
+    @staticmethod
+    def load_model():
         model = cv2.dnn.readNetFromDarknet(CONFIG_PATH, WEIGHTS_PATH)
         return model
 
@@ -60,7 +60,8 @@ class YoloModel:
                 if confidence > threshold:
                     class_id = int(class_id)
                     if class_id in predictions_raw.keys():
-                        if predictions_raw[class_id] < float(confidence): predictions_raw[class_id] = float(confidence)
+                        if predictions_raw[class_id] < float(confidence):
+                            predictions_raw[class_id] = float(confidence)
                     else:
                         predictions_raw[class_id] = float(confidence)
 
@@ -75,6 +76,7 @@ def predict(file):
     try:
         image_passed = file.read()
         image_converted = image_preprocess(image_passed)
+        # fixme: exceptions
         try:
             # using passed threshold
             threshold = 0.05

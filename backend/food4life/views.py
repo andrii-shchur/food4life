@@ -11,7 +11,7 @@ from .serializers import *
 from .models import *
 from .forms import *
 
-from .object_detection.main import predict
+from .object_detection.detect import predict
 
 from .filtermanager import FilterManager
 
