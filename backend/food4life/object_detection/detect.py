@@ -74,13 +74,13 @@ model = YoloModel()
 
 
 def predict(file):
-    img = Image.open(io.BytesIO(file.read()))
+    fp = io.BytesIO(file.read())
     try:
-        img.verify()
+        Image.open(fp).verify()
     except Exception as e:
         print(e)
         return None
-
+    img = Image.open(fp)
     image_converted = image_preprocess(img)
 
     # using passed threshold
