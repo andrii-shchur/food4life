@@ -31,3 +31,15 @@ class FavouritesSerializer(serializers.ModelSerializer):
     class Meta:
         model = Favourites
         fields = ('id', 'user_id', 'recipe_id',)
+
+
+class CategoriesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Categories
+        fields = ('id', 'recipe_id', 'name',)
+
+
+class RecommendationsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Recommendations
+        fields = ('id', 'from_recipe', 'to_recipe',)

@@ -54,8 +54,7 @@ class Recipe(models.Model):
     fats = models.CharField(max_length=50, null=True)
     carbs = models.CharField(max_length=50, null=True)
     yields = models.CharField(max_length=50, null=True)
-    # est_time в хвилинах
-    est_time = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(300)])
+    est_time = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(300)], null=True)
 
     def __str__(self):
         return self.name
@@ -66,7 +65,7 @@ class Ingredient(models.Model):
     description = models.CharField(max_length=250, default='NoNameProduct')
 
     def __str__(self):
-        return f'recipe_id:{self.recipe} amount:{self.description}'
+        return f'recipe:{self.recipe} description:{self.description}'
 
 
 class Rating(models.Model):
@@ -78,7 +77,7 @@ class Rating(models.Model):
         unique_together = (('user', 'recipe'),)
 
     def __str__(self):
-        return f'user:{self.user} recipe:{self.recipe} rating:{self.rating}'
+        return f'user_id:{self.user_id} recipe:{self.recipe} rating:{self.rating}'
 
 
 class Favourites(models.Model):
@@ -86,7 +85,7 @@ class Favourites(models.Model):
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
 
     def __str__(self):
-        return f'user_id:{self.user} recipe_id:{self.recipe}'
+        return f'user_id:{self.user_id} recipe:{self.recipe}'
 
 
 class Categories(models.Model):

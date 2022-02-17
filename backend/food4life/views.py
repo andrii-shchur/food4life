@@ -123,12 +123,12 @@ def get_hot_recipes(request, count):
 @api_view(['GET'])
 def get_similar_recipes(request):
     user_id = get_user_id(request)
-    recs = {}
-    favs = Favourites.objects.get(user=user_id).order_by('-id').all()[:10]
+    recs = set()
+    favs = Favourites.objects.filter(user=user_id).order_by('-id')[:10]
     for fav in favs:
-        rec = Recommendations.objects.filter(frome_recipe=fav.recipe.id).all()
+        rec = Recommendations.objects.filter(from_recipe=fav.recipe)
         recs.update(r.to_recipe for r in rec)
-    serializer = RecipeSerializer(recs[:30], many=True)
+    serializer = RecipeSerializer(list(recs)[:30], many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -168,7 +168,7 @@ def get_favorites(request):
         except models.ObjectDoesNotExist:
             return Response({'message': 'The user does not exist.'}, status=status.HTTP_404_NOT_FOUND)
         result = []
-        user_favs = Favourites.objects.filter(user=user)
+        user_favs = Favourites.objects.filter(user=user).order_by('-id')
         for fav in user_favs:
             rec = Recipe.objects.get(pk=fav.recipe_id)
             serialized_recipe = RecipeSerializer(rec)
@@ -227,15 +227,10 @@ def rating(request):
 @api_view(['GET'])
 @permission_classes([IsAdminUser])
 def temp(request):
-    # fm = FilterManager()
     # recipes = Recipe.objects.all()
-    # result = []
-    # recipes = fm.apply_filters(['order_by_difficulty_desc'], recipes)
-    # for el in recipes:
-    #     result.append(dict(RecipeSerializer(el).data))
-    # return Response(result, status.HTTP_200_OK)
-    ratings = Rating.objects.all()
-    serializer = RatingSerializer(ratings, many=True)
+    # serializer = RecipeSerializer(recipes, many=True)
+    recs = Recommendations.objects.all()
+    serializer = RecommendationsSerializer(recs, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -243,23 +238,24 @@ def temp(request):
 @api_view(['POST'])
 @permission_classes([IsAdminUser])
 def fill_db(request):
-    # recipes = Recipe.objects.all()
-    # recipes.delete()
-    # ingredients = Ingredient.objects.all()
-    # ingredients.delete()
-    # ratings = Rating.objects.all()
-    # ratings.delete()
-    # favourites = Favourites.objects.all()
-    # favourites.delete()
-    # categories = Categories()
-    # categories.delete()
-    # recommendations = Recommendations()
-    # recommendations.delete()
+    recipes = Recipe.objects.all()
+    recipes.delete()
+    ingredients = Ingredient.objects.all()
+    ingredients.delete()
+    ratings = Rating.objects.all()
+    ratings.delete()
+    favourites = Favourites.objects.all()
+    favourites.delete()
+    categories = Categories.objects.all()
+    categories.delete()
+    recommendations = Recommendations.objects.all()
+    recommendations.delete()
     with request.FILES['file'] as f:
         data = json.loads(f.read())
 
-        recipes = []
+        recipes, favourites, ingredients, ratings, categories, recommendations = [], [], [], [], [], []
         for el in data:
+            # create RECIPE entry
             rec = Recipe()
             rec.difficulty = random.randint(1, 5)
             rec.description = el['instructions']
@@ -275,47 +271,79 @@ def fill_db(request):
             except (KeyError, TypeError,):
                 pass
             recipes.append(rec)
-        try:
-            Recipe.objects.bulk_create(recipes)
-        except Exception as e:
-            print(e)
 
-        ingredients = []
-        for el in data:
-            for i in el['ingredients']:
+            # create INGREDIENTS entry
+            for s in el['ingredients']:
                 ingredient = Ingredient()
                 ingredient.recipe = rec
-                ingredient.description = i
+                ingredient.description = s
                 ingredients.append(ingredient)
-        try:
-            Ingredient.objects.bulk_create(ingredients)
-        except Exception as e:
-            print(e)
 
-        ratings = []
-        for el in data:
+            # create RATING entry
             r = Rating()
             r.user = User.objects.get(pk=1)
-            r.recipe = Recipe.objects.order_by('?')[0]
+            r.recipe = rec
             r.rating = random.randint(1, 5)
             ratings.append(r)
-        try:
-            Rating.objects.bulk_create(ratings)
-        except Exception as e:
-            print(e)
 
-        for el in data:
+            # create FAVOURITES entry
             a = random.randint(1, 50)
             if a == 42:
                 favourite = Favourites()
                 favourite.user = User.objects.get(pk=1)
                 favourite.recipe = rec
-                favourite.save()
+                favourites.append(favourite)
+
+            # create CATEGORIES entry
+            for s in el['categories']:
+                category = Categories()
+                category.recipe = rec
+                category.name = s
+                categories.append(category)
+
+            # create RECOMMENDATIONS entry
+        try:
+            Recipe.objects.bulk_create(recipes)
+        except Exception as e:
+            print(e)
+        try:
+            Ingredient.objects.bulk_create(ingredients)
+        except Exception as e:
+            print(e)
+        try:
+            Rating.objects.bulk_create(ratings)
+        except Exception as e:
+            print(e)
+        try:
+            Favourites.objects.bulk_create(favourites)
+        except Exception as e:
+            print(e)
+        try:
+            Categories.objects.bulk_create(categories)
+        except Exception as e:
+            print(e)
 
         for el in data:
-            recommendation = Recommendations()
-            for i in el['categories']:
-                category = Categories()
+            from_r = Recipe.objects.get(name=el['title'])
+            for s in el['recommendations']:
+                recommendation = Recommendations()
+                recommendation.from_recipe = from_r
+                try:
+                    recommendation.to_recipe = Recipe.objects.filter(name__icontains=s)[0]
+                except IndexError:
+                    continue
+                print(type(recommendation.from_recipe))
+                print(recommendation.from_recipe == recommendation.to_recipe)
+                if recommendation.from_recipe == recommendation.to_recipe:
+                    continue
 
-
+                try:
+                    recommendation.save()
+                except IntegrityError as e:
+                    print(e)
+                    continue
+        # try:
+        #     Recommendations.objects.bulk_create(recommendations)
+        # except Exception as e:
+        #     print(e)
     return Response()
