@@ -120,7 +120,7 @@ def get_hot_recipes(request, count):
 def get_similar_recipes(request):
     user_id = get_user_id(request)
     recs = {}
-    favs = Favourites.objects.get(user=user_id).all()[:10]
+    favs = Favourites.objects.get(user=user_id).order_by('-id').all()[:10]
     for fav in favs:
         rec = Recommendations.objects.filter(frome_recipe=fav.recipe.id).all()
         recs.update(r.to_recipe for r in rec)
