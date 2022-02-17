@@ -2,7 +2,7 @@ import json
 import random
 
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -11,12 +11,10 @@ from .serializers import *
 from .models import *
 from .forms import *
 
-
 from .object_detection.detect import predict
+
 from django.db.models import Avg
 from django.db.utils import IntegrityError
-
-from .filtermanager import FilterManager
 
 
 @api_view(['POST'])
@@ -72,14 +70,14 @@ def recommend(request):
 
 
 @api_view(['GET'])
-def recipe(request, id):
+def recipe(request, recipe_id):
     if request.method == 'GET':
         try:
-            recipe = Recipe.objects.get(pk=id)
+            rec = Recipe.objects.get(pk=recipe_id)
         except models.ObjectDoesNotExist:
             return Response({'message': 'No recipes with such id found'}, status=status.HTTP_404_NOT_FOUND)
-        recipe_serializer = RecipeSerializer(recipe)
-        ingredients = Ingredient.objects.filter(recipe=recipe)
+        recipe_serializer = RecipeSerializer(rec)
+        ingredients = Ingredient.objects.filter(recipe=rec)
         ingredients_serializer = IngredientSerializer(ingredients, many=True)
 
         result = dict(recipe_serializer.data)
@@ -111,18 +109,18 @@ def get_hot_recipes(request, count):
 
 
 @api_view(['DELETE', 'POST'])
-def add_or_remove_favourites(request, user_id, recipe_id):
+def add_or_remove_favorites(request, user_id, recipe_id):
     fav_db_entry = Favourites.objects.filter(user_id=user_id, recipe_id=recipe_id)
     if request.method == 'POST':
         if fav_db_entry:
             return Response({'message': 'The recipe is already in favourites.'}, status=status.HTTP_400_BAD_REQUEST)
         fav = Favourites()
         user = User.objects.filter(pk=user_id)
-        recipe = Recipe.objects.filter(pk=recipe_id)
+        rec = Recipe.objects.filter(pk=recipe_id)
         if user:
-            if recipe:
+            if rec:
                 fav.user = user.get()
-                fav.recipe = recipe.get()
+                fav.recipe = rec.get()
                 fav.save()
                 return Response({'message': 'The recipe has been successfully added to favourite list.'},
                                 status=status.HTTP_201_CREATED)
@@ -137,7 +135,7 @@ def add_or_remove_favourites(request, user_id, recipe_id):
 
 
 @api_view(['GET'])
-def get_favourites_by_user_id(request, user_id):
+def get_favorites_by_user_id(request, user_id):
     if request.method == 'GET':
         try:
             user = User.objects.get(pk=user_id)
@@ -146,8 +144,8 @@ def get_favourites_by_user_id(request, user_id):
         result = []
         user_favs = Favourites.objects.filter(user=user)
         for fav in user_favs:
-            recipe = Recipe.objects.get(pk=fav.recipe_id)
-            serialized_recipe = RecipeSerializer(recipe)
+            rec = Recipe.objects.get(pk=fav.recipe_id)
+            serialized_recipe = RecipeSerializer(rec)
             result.append(dict(serialized_recipe.data))
         return Response(result, status=status.HTTP_200_OK)
 
@@ -234,31 +232,31 @@ def fill_db(request):
             c += 1
             if c == 200:
                 break
-            recipe = Recipe()
-            recipe.difficulty = random.randint(1, 5)
-            recipe.description = el['instructions']
-            recipe.name = el['title']
-            recipe.img_path = el['image']
-            recipe.est_time = el['total_time']
+            rec = Recipe()
+            rec.difficulty = random.randint(1, 5)
+            rec.description = el['instructions']
+            rec.name = el['title']
+            rec.img_path = el['image']
+            rec.est_time = el['total_time']
             try:
-                recipe.calories = el['nutrients']['calories']
-                recipe.proteins = el['nutrients']['proteinContent']
-                recipe.fats = el['nutrients']['fatContent']
-                recipe.carbs = el['nutrients']['carbohydrateContent']
-                recipe.yields = el['yields']
-                recipe.time = random.randint(1, 3)
+                rec.calories = el['nutrients']['calories']
+                rec.proteins = el['nutrients']['proteinContent']
+                rec.fats = el['nutrients']['fatContent']
+                rec.carbs = el['nutrients']['carbohydrateContent']
+                rec.yields = el['yields']
+                rec.time = random.randint(1, 3)
             except (KeyError, TypeError,):
                 pass
 
             try:
-                recipe.save()
+                rec.save()
             except Exception as e:
                 print(e)
                 continue
 
             for i in el['ingredients']:
                 ingredient = Ingredient()
-                ingredient.recipe = recipe
+                ingredient.recipe = rec
                 ingredient.description = i
                 try:
                     ingredient.save()
@@ -266,12 +264,12 @@ def fill_db(request):
                     print(e)
                     continue
 
-            rating = Rating()
-            rating.user = User.objects.get(pk=1)
-            rating.recipe = recipe
-            rating.rating = random.randint(1, 5)
+            r = Rating()
+            r.user = User.objects.get(pk=1)
+            r.recipe = rec
+            r.rating = random.randint(1, 5)
             try:
-                rating.save()
+                r.save()
             except Exception as e:
                 print(e)
                 continue
@@ -280,7 +278,7 @@ def fill_db(request):
             if a == 42:
                 favourite = Favourites()
                 favourite.user = User.objects.get(pk=1)
-                favourite.recipe = recipe
+                favourite.recipe = rec
                 favourite.save()
 
     return Response()
