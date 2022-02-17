@@ -53,7 +53,8 @@ def get_prediction(request):
         form = UploadFileForm(request.POST, request.FILES)
         if form.is_valid():
             result = predict(request.FILES['file'])
-            return Response(result, status=status.HTTP_200_OK)
+            if result is not None:
+                return Response(result, status=status.HTTP_200_OK)
         return Response(form.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -117,6 +118,18 @@ def get_hot_recipes(request, count):
         recipes = Recipe.objects.all().annotate(avg=Avg('rating__rating')).order_by('-avg')[:count]
         serializer = RecipeSerializer(recipes, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+def get_similar_recipes(request):
+    user_id = get_user_id(request)
+    recs = {}
+    favs = Favourites.objects.get(user=user_id).order_by('-id').all()[:10]
+    for fav in favs:
+        rec = Recommendations.objects.filter(frome_recipe=fav.recipe.id).all()
+        recs.update(r.to_recipe for r in rec)
+    serializer = RecipeSerializer(recs[:30], many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 @api_view(['DELETE', 'POST'])
