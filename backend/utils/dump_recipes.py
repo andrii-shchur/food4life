@@ -10,10 +10,10 @@ def main():
     for pnum in range(1, 207):
         rcls = []
         thrls = []
-        page = "https://www.acouplecooks.com/category/recipes/?_paged={}".format(pnum)
+        page = 'https://www.acouplecooks.com/category/recipes/?_paged={}'.format(pnum)
         req = requests.get(page)
-        bs4 = BeautifulSoup(req.text, "lxml")
-        recipe_urls = bs4.findAll("h2", {"class": "post-summary__title"})
+        bs4 = BeautifulSoup(req.text, 'lxml')
+        recipe_urls = bs4.findAll('h2', {'class': 'post-summary__title'})
         print(pnum)
 
         def sf(url):
@@ -34,39 +34,39 @@ def main():
             }
 
             try:
-                dc["total_time"] = dt.total_time()
+                dc['total_time'] = dt.total_time()
             except Exception:
                 pass
             try:
-                dc["title"] = dt.title()
+                dc['title'] = dt.title()
             except Exception:
                 pass
             try:
-                dc["yields"] = dt.yields()
+                dc['yields'] = dt.yields()
             except Exception:
                 pass
             try:
-                dc["ingredients"] = dt.ingredients()
+                dc['ingredients'] = dt.ingredients()
             except Exception:
                 pass
             try:
-                dc["instructions"] = dt.instructions()
+                dc['instructions'] = dt.instructions()
             except Exception:
                 pass
             try:
-                dc["image"] = dt.image()
+                dc['image'] = dt.image()
             except Exception:
                 pass
             try:
-                dc["host"] = dt.host()
+                dc['host'] = dt.host()
             except Exception:
                 pass
             try:
-                dc["links"] = dt.links()
+                dc['links'] = dt.links()
             except Exception:
                 pass
             try:
-                dc["nutrients"] = dt.nutrients()
+                dc['nutrients'] = dt.nutrients()
             except Exception:
                 pass
             categories = dt.soup.find('ul', {'class': 'post-categories'})
@@ -85,7 +85,7 @@ def main():
             rcls.append(dc)
 
         for recipe_url in recipe_urls:
-            thr = Thread(target=sf, args=[recipe_url.find("a", recursive=False)["href"]])
+            thr = Thread(target=sf, args=[recipe_url.find('a', recursive=False)['href']])
             thrls.append(thr)
             thr.start()
         for thr in thrls:
@@ -93,7 +93,7 @@ def main():
 
         ls.extend(rcls)
 
-    json.dump(ls, open("dump.json", "w"))
+    json.dump(ls, open('dump.json', 'w'))
 
 
 if __name__ == '__main__':
