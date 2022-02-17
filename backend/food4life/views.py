@@ -5,7 +5,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 
 from .serializers import *
 from .models import *
@@ -15,6 +15,11 @@ from .object_detection.detect import predict
 
 from django.db.models import Avg
 from django.db.utils import IntegrityError
+
+
+def get_user_id(request):
+    token_obj = AccessToken(request.META.get('HTTP_AUTHORIZATION').split()[1])
+    return token_obj['user_id']
 
 
 @api_view(['POST'])
@@ -109,7 +114,8 @@ def get_hot_recipes(request, count):
 
 
 @api_view(['DELETE', 'POST'])
-def add_or_remove_favorites(request, user_id, recipe_id):
+def add_or_remove_favorites(request, recipe_id):
+    user_id = get_user_id(request)
     fav_db_entry = Favourites.objects.filter(user_id=user_id, recipe_id=recipe_id)
     if request.method == 'POST':
         if fav_db_entry:
@@ -135,7 +141,8 @@ def add_or_remove_favorites(request, user_id, recipe_id):
 
 
 @api_view(['GET'])
-def get_favorites_by_user_id(request, user_id):
+def get_favorites(request):
+    user_id = get_user_id(request)
     if request.method == 'GET':
         try:
             user = User.objects.get(pk=user_id)
@@ -153,7 +160,7 @@ def get_favorites_by_user_id(request, user_id):
 @api_view(['POST', 'DELETE'])
 def rating(request):
     if request.method == 'POST':
-        user_id = request.data['user_id']
+        user_id = get_user_id(request)
         recipe_id = request.data['recipe_id']
         value = request.data['value']
 
@@ -185,7 +192,7 @@ def rating(request):
         return Response({'message': 'Rating successfully added'}, status=status.HTTP_201_CREATED)
 
     elif request.method == 'DELETE':
-        user_id = request.data['user_id']
+        user_id = get_user_id(request)
         recipe_id = request.data['recipe_id']
 
         try:

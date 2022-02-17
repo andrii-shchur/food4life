@@ -2,7 +2,6 @@ from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser, BaseUserManager
-from rest_framework_simplejwt.tokens import AccessToken
 
 
 class UserManager(BaseUserManager):
@@ -79,11 +78,6 @@ class Rating(models.Model):
     class Meta:
         unique_together = (('user', 'recipe'),)
 
-    def can_manage(self, request):
-        token_obj = AccessToken(request.META.get('HTTP_AUTHORIZATION'))
-        user_id = token_obj['user_id']
-        return self.user.id == user_id
-
     def __str__(self):
         return f'user:{self.user} recipe:{self.recipe} rating:{self.rating}'
 
@@ -91,11 +85,6 @@ class Rating(models.Model):
 class Favourites(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
-
-    def can_manage(self, request):
-        token_obj = AccessToken(request.META.get('HTTP_AUTHORIZATION'))
-        user_id = token_obj['user_id']
-        return self.user.id == user_id
 
     def __str__(self):
         return f'user_id:{self.user} recipe_id:{self.recipe}'
