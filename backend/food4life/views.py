@@ -116,6 +116,18 @@ def get_hot_recipes(request, count):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+@api_view(['GET'])
+def get_similar_recipes(request):
+    user_id = get_user_id(request)
+    recs = {}
+    favs = Favourites.objects.get(user=user_id).all()[:10]
+    for fav in favs:
+        rec = Recommendations.objects.filter(frome_recipe=fav.recipe.id).all()
+        recs.update(r.to_recipe for r in rec)
+    serializer = RecipeSerializer(recs[:30], many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
 @api_view(['DELETE', 'POST'])
 def add_or_remove_favorites(request, recipe_id):
     user_id = get_user_id(request)

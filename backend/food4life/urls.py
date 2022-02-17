@@ -12,6 +12,7 @@ urlpatterns = [
     path('favorites', views.get_favorites, name='get user favourites'),
     path('hot_recipes/<int:count>', views.get_hot_recipes, name='hot recipes'),
     path('time_recipes/<int:time>/<int:count>', views.get_recipes_by_time, name='recipes by time'),
+    path('similar_recipes', views.get_similar_recipes, name='get similar liked recipes'),
     path('rating', views.rating, name='add/delete rating'),
     path('temp', views.temp, name='temp'),
 ]
