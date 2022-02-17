@@ -43,9 +43,9 @@ def log_out(request):
             return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['GET'])
+@api_view(['POST'])
 def get_prediction(request):
-    if request.method == 'GET':
+    if request.method == 'POST':
         form = UploadFileForm(request.POST, request.FILES)
         if form.is_valid():
             result = predict(request.FILES['file'])
