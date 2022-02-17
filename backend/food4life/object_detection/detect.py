@@ -16,9 +16,8 @@ IMAGE_TO_W = 416
 IMAGE_TO_H = 416
 
 
-def image_preprocess(img_passed):
-    image = Image.open(io.BytesIO(img_passed))
-    image = np.array(image).copy()
+def image_preprocess(pil_img: Image.Image):
+    image = np.array(pil_img).copy()
     return cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
 
@@ -71,22 +70,19 @@ class YoloModel:
         return predictions
 
 
+model = YoloModel()
+
+
 def predict(file):
-    model = YoloModel()
+    img = Image.open(io.BytesIO(file.read()))
     try:
-        image_passed = file.read()
-        image_converted = image_preprocess(image_passed)
-        # fixme: exceptions
-        try:
-            # using passed threshold
-            threshold = 0.05
-            predictions = model.predict(image_converted, threshold)
-        except Exception as e:
-            print(e)
-            predictions = model.predict(image_converted)
-
-        return {'result': predictions}
-
+        img.verify()
     except Exception as e:
         print(e)
-        return {'message': 'Make sure an image is passed!'}
+        return None
+
+    image_converted = image_preprocess(img)
+
+    # using passed threshold
+    predictions = model.predict(image_converted, threshold=0.05)
+    return predictions

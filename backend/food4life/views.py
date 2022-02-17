@@ -53,7 +53,8 @@ def get_prediction(request):
         form = UploadFileForm(request.POST, request.FILES)
         if form.is_valid():
             result = predict(request.FILES['file'])
-            return Response(result, status=status.HTTP_200_OK)
+            if result is not None:
+                return Response(result, status=status.HTTP_200_OK)
         return Response(form.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
