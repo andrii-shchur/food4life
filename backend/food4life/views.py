@@ -96,16 +96,19 @@ def recipe(request, recipe_id):
         return Response(result, status=status.HTTP_200_OK)
 
 
-# переробити
 @api_view(['GET'])
-def get_recipes_by_time(request, time, count):
+def get_recipes_by_time(request, time):
     if request.method == 'GET':
-        try:
-            recipes = Recipe.objects.filter(time=time)[:count]
-            serializer = RecipeSerializer(recipes, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        except models.ObjectDoesNotExist:
+        if time not in [1, 2, 3]:
             return Response({'message': 'Invalid time'}, status=status.HTTP_400_BAD_REQUEST)
+        time_to_str = {
+            1: 'breakfast',
+            2: 'lunch',
+            3: 'dinner'
+        }
+        q = Categories.objects.filter(name__icontains=time_to_str[time]).values()
+        result = [x['recipe_id'] for x in q]
+        return Response(result, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['GET'])
@@ -235,13 +238,15 @@ def fill_db(request):
     # ratings.delete()
     # favourites = Favourites.objects.all()
     # favourites.delete()
+    # categories = Categories()
+    # categories.delete()
+    # recommendations = Recommendations()
+    # recommendations.delete()
     with request.FILES['file'] as f:
         data = json.loads(f.read())
-        c = 0
+
+        recipes = []
         for el in data:
-            c += 1
-            if c == 200:
-                break
             rec = Recipe()
             rec.difficulty = random.randint(1, 5)
             rec.description = el['instructions']
@@ -256,38 +261,48 @@ def fill_db(request):
                 rec.yields = el['yields']
             except (KeyError, TypeError,):
                 pass
+            recipes.append(rec)
+        try:
+            Recipe.objects.bulk_create(recipes)
+        except Exception as e:
+            print(e)
 
-            try:
-                rec.save()
-            except Exception as e:
-                print(e)
-                continue
-
+        ingredients = []
+        for el in data:
             for i in el['ingredients']:
                 ingredient = Ingredient()
                 ingredient.recipe = rec
                 ingredient.description = i
-                try:
-                    ingredient.save()
-                except Exception as e:
-                    print(e)
-                    continue
+                ingredients.append(ingredient)
+        try:
+            Ingredient.objects.bulk_create(ingredients)
+        except Exception as e:
+            print(e)
 
+        ratings = []
+        for el in data:
             r = Rating()
             r.user = User.objects.get(pk=1)
-            r.recipe = rec
+            r.recipe = Recipe.objects.order_by('?')[0]
             r.rating = random.randint(1, 5)
-            try:
-                r.save()
-            except Exception as e:
-                print(e)
-                continue
+            ratings.append(r)
+        try:
+            Rating.objects.bulk_create(ratings)
+        except Exception as e:
+            print(e)
 
+        for el in data:
             a = random.randint(1, 50)
             if a == 42:
                 favourite = Favourites()
                 favourite.user = User.objects.get(pk=1)
                 favourite.recipe = rec
                 favourite.save()
+
+        for el in data:
+            recommendation = Recommendations()
+            for i in el['categories']:
+                category = Categories()
+
 
     return Response()
