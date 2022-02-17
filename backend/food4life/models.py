@@ -54,8 +54,6 @@ class Recipe(models.Model):
     fats = models.CharField(max_length=50, null=True)
     carbs = models.CharField(max_length=50, null=True)
     yields = models.CharField(max_length=50, null=True)
-    avg_rating = models.DecimalField(max_digits=3, decimal_places=2,
-                                     validators=[MinValueValidator(1), MaxValueValidator(5)], default=3.00)
     time = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(3)], default=2)
     # est_time в хвилинах
     est_time = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(300)])
@@ -77,8 +75,11 @@ class Rating(models.Model):
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
     rating = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
 
+    class Meta:
+        unique_together = (('user', 'recipe'),)
+
     def __str__(self):
-        return f'user:{self.user} recipe_id:{self.recipe} rating:{self.rating}'
+        return f'user:{self.user} recipe:{self.recipe} rating:{self.rating}'
 
 
 class Favourites(models.Model):

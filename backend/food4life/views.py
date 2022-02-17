@@ -12,6 +12,8 @@ from .models import *
 from .forms import *
 
 from .object_detection.main import predict
+from django.db.models import Avg
+from django.db.utils import IntegrityError
 
 from .filtermanager import FilterManager
 
@@ -87,6 +89,7 @@ def recipe(request, id):
         return Response(result, status=status.HTTP_200_OK)
 
 
+# переробити
 @api_view(['GET'])
 def get_recipes_by_time(request, time, count):
     if request.method == 'GET':
@@ -101,7 +104,7 @@ def get_recipes_by_time(request, time, count):
 @api_view(['GET'])
 def get_hot_recipes(request, count):
     if request.method == 'GET':
-        recipes = Recipe.objects.order_by('-avg_rating')[:count]
+        recipes = Recipe.objects.all().annotate(avg=Avg('rating__rating')).order_by('-avg')[:count]
         serializer = RecipeSerializer(recipes, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -148,19 +151,70 @@ def get_favourites_by_user_id(request, user_id):
         return Response(result, status=status.HTTP_200_OK)
 
 
+@api_view(['POST', 'DELETE'])
+def rating(request):
+    if request.method == 'POST':
+        user_id = request.data['user_id']
+        recipe_id = request.data['recipe_id']
+        value = request.data['value']
+
+        r = Rating()
+        try:
+            r.user = User.objects.get(pk=user_id)
+        except models.ObjectDoesNotExist:
+            return Response({'message': 'User does not exist'}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            r.recipe = Recipe.objects.get(pk=recipe_id)
+        except models.ObjectDoesNotExist:
+            return Response({'message': 'Recipe does not exist'}, status=status.HTTP_404_NOT_FOUND)
+        r.rating = value
+
+        serializer = RatingSerializer(data=r.__dict__)
+        if not serializer.is_valid():
+            return Response({'message': 'Invalid rating value'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            r.save()
+        except IntegrityError:
+            existing_rating = Rating.objects.get(user_id=user_id, recipe_id=recipe_id)
+            old_value = existing_rating.rating
+            existing_rating.rating = value
+            existing_rating.save()
+            return Response({'message': 'Changed rating value',
+                             'old_value': old_value}, status=status.HTTP_200_OK)
+
+        return Response({'message': 'Rating successfully added'}, status=status.HTTP_201_CREATED)
+
+    elif request.method == 'DELETE':
+        user_id = request.data['user_id']
+        recipe_id = request.data['recipe_id']
+
+        try:
+            r = Rating.objects.get(user_id=user_id, recipe_id=recipe_id)
+        except models.ObjectDoesNotExist:
+            return Response({'message': 'Rating does not exist'}, status=status.HTTP_404_NOT_FOUND)
+
+        r.delete()
+        return Response({'message': 'Rating successfully deleted'}, status=status.HTTP_200_OK)
+
+
 # development purposes only.
 @api_view(['GET'])
 @permission_classes([IsAdminUser])
 def temp(request):
-    fm = FilterManager()
-    recipes = Recipe.objects.all()
-    result = []
-    recipes = fm.apply_filters(['order_by_difficulty_desc'], recipes)
-    for el in recipes:
-        result.append(dict(RecipeSerializer(el).data))
-    return Response(result, status.HTTP_200_OK)
+    # fm = FilterManager()
+    # recipes = Recipe.objects.all()
+    # result = []
+    # recipes = fm.apply_filters(['order_by_difficulty_desc'], recipes)
+    # for el in recipes:
+    #     result.append(dict(RecipeSerializer(el).data))
+    # return Response(result, status.HTTP_200_OK)
+    ratings = Rating.objects.all()
+    serializer = RatingSerializer(ratings, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+# development purposes only.
 @api_view(['POST'])
 @permission_classes([IsAdminUser])
 def fill_db(request):
@@ -191,7 +245,6 @@ def fill_db(request):
                 recipe.fats = el['nutrients']['fatContent']
                 recipe.carbs = el['nutrients']['carbohydrateContent']
                 recipe.yields = el['yields']
-                recipe.avg_rating = random.randint(1, 500)/100
                 recipe.time = random.randint(1, 3)
             except (KeyError, TypeError,):
                 pass

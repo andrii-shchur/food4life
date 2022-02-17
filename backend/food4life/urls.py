@@ -12,5 +12,6 @@ urlpatterns = [
     path('favourites/<int:user_id>/', views.get_favourites_by_user_id, name='get user favourites'),
     path('hot_recipes/<int:count>', views.get_hot_recipes, name='hot recipes'),
     path('time_recipes/<int:time>/<int:count>', views.get_recipes_by_time, name='recipes by time'),
+    path('rating/', views.rating, name='add/delete rating'),
     path('temp/', views.temp, name='temp'),
 ]

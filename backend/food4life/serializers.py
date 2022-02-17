@@ -12,7 +12,7 @@ class RecipeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Recipe
         fields = ('id', 'difficulty', 'description', 'name', 'img_path', 'calories', 'proteins', 'fats', 'carbs',
-                  'est_time', 'yields', 'avg_rating', 'time')
+                  'est_time', 'yields', 'time')
 
 
 class IngredientSerializer(serializers.ModelSerializer):
