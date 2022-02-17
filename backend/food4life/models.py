@@ -88,3 +88,22 @@ class Favourites(models.Model):
 
     def __str__(self):
         return f'user_id:{self.user} recipe_id:{self.recipe}'
+
+
+class Categories(models.Model):
+    recipe = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    name = models.CharField(max_length=250, default='Default Category')
+
+    def __str__(self):
+        return f'recipe_id:{self.recipe} name:{self.name}'
+
+
+class Recommendations(models.Model):
+    from_recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name='from_recipe')
+    to_recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name='to_recipe')
+
+    class Meta:
+        unique_together = (('from_recipe', 'to_recipe'),)
+
+    def __str__(self):
+        return f'from_recipe:{self.from_recipe} to_recipe:{self.to_recipe}'
