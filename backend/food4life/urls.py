@@ -4,7 +4,7 @@ from . import views
 urlpatterns = [
     path('register', views.register, name='register'),
     path('logout', views.log_out, name='logout'),
-    path('recommend', views.recommend, name='recommend recipes'),
+    path('search', views.search, name='recommend recipes'),
     path('recipe/<int:recipe_id>', views.recipe, name='product by id'),
     path('predict', views.get_prediction, name='predict'),
     path('add_recipes', views.fill_db, name='add recipes (admin)'),

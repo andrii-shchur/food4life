@@ -15,6 +15,7 @@ from .object_detection.detect import predict
 
 from django.db.models import Avg
 from django.db.utils import IntegrityError
+from django.forms.models import model_to_dict
 
 
 def get_user_id(request):
@@ -57,7 +58,7 @@ def get_prediction(request):
 
 
 @api_view(['GET'])
-def recommend(request):
+def search(request):
     if request.method == 'GET':
         products = request.data['list']
         # ахтунг костиль
@@ -89,6 +90,8 @@ def recipe(request, recipe_id):
         result['ingredients'] = []
         for el in ingredients_serializer.data:
             result['ingredients'].append(el['description'])
+        result['avg_rating'] = Recipe.objects.filter(pk=
+                                                     recipe_id).annotate(avg=Avg('rating__rating')).values()[0]['avg']
 
         return Response(result, status=status.HTTP_200_OK)
 
@@ -175,7 +178,7 @@ def rating(request):
             return Response({'message': 'Recipe does not exist'}, status=status.HTTP_404_NOT_FOUND)
         r.rating = value
 
-        serializer = RatingSerializer(data=r.__dict__)
+        serializer = RatingSerializer(data=model_to_dict(r))
         if not serializer.is_valid():
             return Response({'message': 'Invalid rating value'}, status=status.HTTP_400_BAD_REQUEST)
 
