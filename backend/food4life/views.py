@@ -161,11 +161,11 @@ def rating(request):
 
         r = Rating()
         try:
-            r.user = User.objects.get(pk=user_id)
+            r.user_id = user_id
         except models.ObjectDoesNotExist:
             return Response({'message': 'User does not exist'}, status=status.HTTP_404_NOT_FOUND)
         try:
-            r.recipe = Recipe.objects.get(pk=recipe_id)
+            r.recipe_id = recipe_id
         except models.ObjectDoesNotExist:
             return Response({'message': 'Recipe does not exist'}, status=status.HTTP_404_NOT_FOUND)
         r.rating = value
