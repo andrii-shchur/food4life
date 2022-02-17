@@ -227,14 +227,14 @@ def temp(request):
 @api_view(['POST'])
 @permission_classes([IsAdminUser])
 def fill_db(request):
-    recipes = Recipe.objects.all()
-    recipes.delete()
-    ingredients = Ingredient.objects.all()
-    ingredients.delete()
-    ratings = Rating.objects.all()
-    ratings.delete()
-    favourites = Favourites.objects.all()
-    favourites.delete()
+    # recipes = Recipe.objects.all()
+    # recipes.delete()
+    # ingredients = Ingredient.objects.all()
+    # ingredients.delete()
+    # ratings = Rating.objects.all()
+    # ratings.delete()
+    # favourites = Favourites.objects.all()
+    # favourites.delete()
     with request.FILES['file'] as f:
         data = json.loads(f.read())
         c = 0
@@ -254,7 +254,6 @@ def fill_db(request):
                 rec.fats = el['nutrients']['fatContent']
                 rec.carbs = el['nutrients']['carbohydrateContent']
                 rec.yields = el['yields']
-                rec.time = random.randint(1, 3)
             except (KeyError, TypeError,):
                 pass
 

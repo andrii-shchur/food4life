@@ -54,7 +54,6 @@ class Recipe(models.Model):
     fats = models.CharField(max_length=50, null=True)
     carbs = models.CharField(max_length=50, null=True)
     yields = models.CharField(max_length=50, null=True)
-    time = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(3)], default=2)
     # est_time в хвилинах
     est_time = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(300)])
 
@@ -91,7 +90,7 @@ class Favourites(models.Model):
 
 
 class Categories(models.Model):
-    recipe = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
     name = models.CharField(max_length=250, default='Default Category')
 
     def __str__(self):
