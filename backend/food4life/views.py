@@ -45,7 +45,7 @@ def log_out(request):
 
 @api_view(['GET'])
 def get_prediction(request):
-    if request.method == 'POST':
+    if request.method == 'GET':
         form = UploadFileForm(request.POST, request.FILES)
         if form.is_valid():
             result = predict(request.FILES['file'])
