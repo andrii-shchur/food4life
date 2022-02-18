@@ -3,17 +3,16 @@ import cv2
 import io
 import numpy as np
 from PIL import Image
+from threading import RLock
 
 CLASSNAMES_PATH = path.join(path.dirname(__file__), "model/obj.names")
 CONFIG_PATH = path.join(path.dirname(__file__), "model/yolov4-config.cfg")
 WEIGHTS_PATH = path.join(path.dirname(__file__), "model/yolov4.weights")
 
-CONFIDENCE_THRESHOLD = 0.3
-nmsthres = 0.1
-
 # Configured to be the same as trained
 IMAGE_TO_W = 416
 IMAGE_TO_H = 416
+_lock = RLock()
 
 
 def image_preprocess(pil_img: Image.Image):
@@ -28,17 +27,15 @@ class YoloModel:
 
     @staticmethod
     def get_labels():
-        f = open(CLASSNAMES_PATH, "r")
-        c = f.read()
-        f.close()
-        return c.split('\n')
+        with open(CLASSNAMES_PATH, "r") as f:
+            return f.readlines()
 
     @staticmethod
     def load_model():
         model = cv2.dnn.readNetFromDarknet(CONFIG_PATH, WEIGHTS_PATH)
         return model
 
-    def predict(self, image, threshold=CONFIDENCE_THRESHOLD):
+    def predict(self, image, threshold=0.3):
         predictions_raw = {}
         predictions = []
 
@@ -46,8 +43,9 @@ class YoloModel:
         ln = [ln[i - 1] for i in self.model.getUnconnectedOutLayers()]
 
         blob = cv2.dnn.blobFromImage(image, 1 / 255.0, (IMAGE_TO_W, IMAGE_TO_H), swapRB=True, crop=False)
-        self.model.setInput(blob)
-        layerOutputs = self.model.forward(ln)
+        with _lock:
+            self.model.setInput(blob)
+            layerOutputs = self.model.forward(ln)
 
         for output in layerOutputs:
             for detection in output:
@@ -75,6 +73,7 @@ model = YoloModel()
 
 def predict(file):
     fp = io.BytesIO(file.read())
+    # todo: check format?
     try:
         Image.open(fp).verify()
     except Exception as e:

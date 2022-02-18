@@ -11,7 +11,7 @@ from .serializers import *
 from .models import *
 from .forms import *
 
-from .object_detection.detect import predict
+from .object_detection import predict
 
 from django.db.models import Avg
 from django.db.utils import IntegrityError
