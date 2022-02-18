@@ -13,6 +13,6 @@ urlpatterns = [
     path('hot_recipes/<int:count>', views.rt_hot_recipes, name='hot recipes'),
     path('time_recipes/<int:time>', views.rt_time_recipes, name='recipes by time'),
     path('similar_recipes', views.rt_similar_recipes, name='get similar liked recipes'),
-    path('rating', views.rt_update_rating, name='add/remove recipe rating'),  # todo: recipe id?
+    path('rating', views.rt_update_rating, name='add/remove/get recipe rating'),
     path('temp', views.rt_temp, name='temp'),
 ]

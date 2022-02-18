@@ -221,6 +221,15 @@ def rt_update_rating(request):
 
         rating.delete()
         return Response({'message': 'Rating successfully deleted'}, status=status.HTTP_200_OK)
+    elif request.method == "GET":
+        user_id = get_user_id(request)
+        recipe_id = request.data['recipe_id']
+        try:
+            rating = Rating.objects.get(user_id=user_id, recipe_id=recipe_id)
+        except models.ObjectDoesNotExist:
+            return Response({'message': 'Rating does not exist'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = RatingSerializer(rating)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 # development purposes only.
