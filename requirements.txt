@@ -8,3 +8,4 @@ Pillow==9.0.1
 requests
 bs4
 recipe_scrapers
+drf-yasg

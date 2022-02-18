@@ -19,4 +19,4 @@ class UserAdmin(BaseUserAdmin):
               'last_login', 'groups', 'user_permissions',)
 
 
-admin.site.rt_register(User, UserAdmin)
+admin.site.register(User, UserAdmin)
