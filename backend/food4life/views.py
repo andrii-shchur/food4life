@@ -25,7 +25,7 @@ def get_user_id(request):
 
 @api_view(['POST'])
 @permission_classes([])
-def register(request):
+def rt_register(request):
     if request.method == 'POST':
         form = RegisterForm(request.data)
         if form.is_valid():
@@ -35,7 +35,7 @@ def register(request):
 
 
 @api_view(['POST'])
-def log_out(request):
+def rt_logout(request):
     if request.method == 'POST':
         try:
             refresh_token = request.data['refresh_token']
@@ -48,7 +48,7 @@ def log_out(request):
 
 
 @api_view(['POST'])
-def get_prediction(request):
+def rt_predict(request):
     if request.method == 'POST':
         form = UploadFileForm(request.POST, request.FILES)
         if form.is_valid():
@@ -59,7 +59,7 @@ def get_prediction(request):
 
 
 @api_view(['GET'])
-def search(request):
+def rt_search(request):
     if request.method == 'GET':
         products = request.data['list']
         # ахтунг костиль
@@ -77,7 +77,7 @@ def search(request):
 
 
 @api_view(['GET'])
-def recipe(request, recipe_id):
+def rt_recipe(request, recipe_id):
     if request.method == 'GET':
         try:
             rec = Recipe.objects.get(pk=recipe_id)
@@ -98,7 +98,7 @@ def recipe(request, recipe_id):
 
 
 @api_view(['GET'])
-def get_recipes_by_time(request, time):
+def rt_time_recipes(request, time):
     if request.method == 'GET':
         if time not in [1, 2, 3]:
             return Response({'message': 'Invalid time'}, status=status.HTTP_400_BAD_REQUEST)
@@ -113,7 +113,7 @@ def get_recipes_by_time(request, time):
 
 
 @api_view(['GET'])
-def get_hot_recipes(request, count):
+def rt_hot_recipes(request, count):
     if request.method == 'GET':
         recipes = Recipe.objects.all().annotate(avg=Avg('rating__rating')).order_by('-avg')[:count]
         serializer = RecipeSerializer(recipes, many=True)
@@ -121,19 +121,19 @@ def get_hot_recipes(request, count):
 
 
 @api_view(['GET'])
-def get_similar_recipes(request):
+def rt_similar_recipes(request):
     user_id = get_user_id(request)
-    recs = set()
+    user_recommendations = set()
     favs = Favourites.objects.filter(user=user_id).order_by('-id')[:10]
     for fav in favs:
-        rec = Recommendations.objects.filter(from_recipe=fav.recipe)
-        recs.update(r.to_recipe for r in rec)
-    serializer = RecipeSerializer(list(recs)[:30], many=True)
+        recommended = Recommendations.objects.filter(from_recipe=fav.rt_recipe)
+        user_recommendations.update(rec.to_recipe for rec in recommended)
+    serializer = RecipeSerializer(list(user_recommendations)[:30], many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 @api_view(['DELETE', 'POST'])
-def add_or_remove_favorites(request, recipe_id):
+def rt_update_favourites(request, recipe_id):
     user_id = get_user_id(request)
     fav_db_entry = Favourites.objects.filter(user_id=user_id, recipe_id=recipe_id)
     if request.method == 'POST':
@@ -160,7 +160,7 @@ def add_or_remove_favorites(request, recipe_id):
 
 
 @api_view(['GET'])
-def get_favorites(request):
+def rt_get_favorites(request):
     user_id = get_user_id(request)
     if request.method == 'GET':
         try:
@@ -177,33 +177,33 @@ def get_favorites(request):
 
 
 @api_view(['POST', 'DELETE'])
-def rating(request):
+def rt_update_rating(request):
     if request.method == 'POST':
         user_id = get_user_id(request)
         recipe_id = request.data['recipe_id']
         value = request.data['value']
 
-        r = Rating()
+        rating = Rating()
         try:
-            r.user_id = user_id
+            rating.user_id = user_id
         except models.ObjectDoesNotExist:
             return Response({'message': 'User does not exist'}, status=status.HTTP_404_NOT_FOUND)
         try:
-            r.recipe_id = recipe_id
+            rating.recipe_id = recipe_id
         except models.ObjectDoesNotExist:
             return Response({'message': 'Recipe does not exist'}, status=status.HTTP_404_NOT_FOUND)
-        r.rating = value
+        rating.rating = value
 
-        serializer = RatingSerializer(data=model_to_dict(r))
+        serializer = RatingSerializer(data=model_to_dict(rating))
         if not serializer.is_valid():
             return Response({'message': 'Invalid rating value'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            r.save()
+            rating.save()
         except IntegrityError:
             existing_rating = Rating.objects.get(user_id=user_id, recipe_id=recipe_id)
-            old_value = existing_rating.rating
-            existing_rating.rating = value
+            old_value = existing_rating.rt_update_rating
+            existing_rating.rt_update_rating = value
             existing_rating.save()
             return Response({'message': 'Changed rating value',
                              'old_value': old_value}, status=status.HTTP_200_OK)
@@ -215,18 +215,18 @@ def rating(request):
         recipe_id = request.data['recipe_id']
 
         try:
-            r = Rating.objects.get(user_id=user_id, recipe_id=recipe_id)
+            rating = Rating.objects.get(user_id=user_id, recipe_id=recipe_id)
         except models.ObjectDoesNotExist:
             return Response({'message': 'Rating does not exist'}, status=status.HTTP_404_NOT_FOUND)
 
-        r.delete()
+        rating.delete()
         return Response({'message': 'Rating successfully deleted'}, status=status.HTTP_200_OK)
 
 
 # development purposes only.
 @api_view(['GET'])
 @permission_classes([IsAdminUser])
-def temp(request):
+def rt_temp(request):
     # recipes = Recipe.objects.all()
     # serializer = RecipeSerializer(recipes, many=True)
     recs = Recommendations.objects.all()
@@ -237,7 +237,7 @@ def temp(request):
 # development purposes only.
 @api_view(['POST'])
 @permission_classes([IsAdminUser])
-def fill_db(request):
+def art_add_recipes(request):
     recipes = Recipe.objects.all()
     recipes.delete()
     ingredients = Ingredient.objects.all()
@@ -280,11 +280,11 @@ def fill_db(request):
                 ingredients.append(ingredient)
 
             # create RATING entry
-            r = Rating()
-            r.user = User.objects.get(pk=1)
-            r.recipe = rec
-            r.rating = random.randint(1, 5)
-            ratings.append(r)
+            rating = Rating()
+            rating.user = User.objects.get(pk=1)
+            rating.recipe = rec
+            rating.rating = random.randint(1, 5)
+            ratings.append(rating)
 
             # create FAVOURITES entry
             a = random.randint(1, 50)
