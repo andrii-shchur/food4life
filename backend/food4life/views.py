@@ -62,14 +62,19 @@ def rt_predict(request):
 def rt_search(request):
     if request.method == 'GET':
         products = request.data['list']
-        # ахтунг костиль
-        result = set(range(1, 10000))
+
+        ids = []
+        i = 0
         for product in products:
             q = Ingredient.objects.filter(description__icontains=product).values()
-            ids = set()
+            ids.append([])
             for el in q:
-                ids.add(el['recipe_id'])
-            result &= ids
+                ids[i].append(el['recipe_id'])
+            i += 1
+
+        result = set()
+        if ids:
+            result = set(ids[0]).intersection(*ids[1:])
 
         recipes = Recipe.objects.filter(id__in=result)
         serializer = RecipeSerializer(recipes, many=True)
@@ -236,10 +241,10 @@ def rt_update_rating(request):
 @api_view(['GET'])
 @permission_classes([IsAdminUser])
 def rt_temp(request):
-    # recipes = Recipe.objects.all()
-    # serializer = RecipeSerializer(recipes, many=True)
-    recs = Recommendations.objects.all()
-    serializer = RecommendationsSerializer(recs, many=True)
+    recipes = Recipe.objects.all()
+    serializer = RecipeSerializer(recipes, many=True)
+    # recs = Recommendations.objects.all()
+    # serializer = RecommendationsSerializer(recs, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
