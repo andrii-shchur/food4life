@@ -63,7 +63,7 @@ class YoloModel:
                         predictions_raw[class_id] = float(confidence)
 
         for obj_id, confidence in predictions_raw.items():
-            predictions.append({'obj_id': obj_id, 'label': self.labels[obj_id], 'confidence': confidence})
+            predictions.append({'obj_id': obj_id, 'label': self.labels[obj_id].strip(), 'confidence': confidence})
 
         return predictions
 

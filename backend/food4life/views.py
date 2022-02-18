@@ -109,12 +109,12 @@ def rt_time_recipes(request, time):
             return Response({'message': 'Invalid time'}, status=status.HTTP_400_BAD_REQUEST)
         time_to_str = {
             1: 'breakfast',
-            2: 'lunch',
+            2: 'brunch',
             3: 'dinner'
         }
         q = Categories.objects.filter(name__icontains=time_to_str[time]).values()
         result = [x['recipe_id'] for x in q]
-        return Response(result, status=status.HTTP_400_BAD_REQUEST)
+        return Response(result, status=status.HTTP_200_OK)
 
 
 @api_view(['GET'])
@@ -131,7 +131,7 @@ def rt_similar_recipes(request):
     user_recommendations = set()
     favs = Favourites.objects.filter(user=user_id).order_by('-id')[:10]
     for fav in favs:
-        recommended = Recommendations.objects.filter(from_recipe=fav.rt_recipe)
+        recommended = Recommendations.objects.filter(from_recipe=fav.recipe)
         user_recommendations.update(rec.to_recipe for rec in recommended)
     serializer = RecipeSerializer(list(user_recommendations)[:30], many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
@@ -188,17 +188,7 @@ def rt_update_rating(request):
         recipe_id = request.data['recipe_id']
         value = request.data['value']
 
-        rating = Rating()
-        try:
-            rating.user_id = user_id
-        except models.ObjectDoesNotExist:
-            return Response({'message': 'User does not exist'}, status=status.HTTP_404_NOT_FOUND)
-        try:
-            rating.recipe_id = recipe_id
-        except models.ObjectDoesNotExist:
-            return Response({'message': 'Recipe does not exist'}, status=status.HTTP_404_NOT_FOUND)
-        rating.rating = value
-
+        rating = Rating(user_id=user_id, recipe_id=recipe_id, rating=value)
         serializer = RatingSerializer(data=model_to_dict(rating))
         if not serializer.is_valid():
             return Response({'message': 'Invalid rating value'}, status=status.HTTP_400_BAD_REQUEST)
@@ -206,9 +196,12 @@ def rt_update_rating(request):
         try:
             rating.save()
         except IntegrityError:
-            existing_rating = Rating.objects.get(user_id=user_id, recipe_id=recipe_id)
-            old_value = existing_rating.rt_update_rating
-            existing_rating.rt_update_rating = value
+            try:
+                existing_rating = Rating.objects.get(user_id=user_id, recipe_id=recipe_id)
+            except models.ObjectDoesNotExist:
+                return Response({'message': 'User or Recipe does not exist'}, status=status.HTTP_404_NOT_FOUND)
+            old_value = existing_rating.rating
+            existing_rating.rating = value
             existing_rating.save()
             return Response({'message': 'Changed rating value',
                              'old_value': old_value}, status=status.HTTP_200_OK)
@@ -226,7 +219,8 @@ def rt_update_rating(request):
 
         rating.delete()
         return Response({'message': 'Rating successfully deleted'}, status=status.HTTP_200_OK)
-    elif request.method == "GET":
+
+    elif request.method == 'GET':
         user_id = get_user_id(request)
         recipe_id = request.data['recipe_id']
         try:
@@ -241,10 +235,12 @@ def rt_update_rating(request):
 @api_view(['GET'])
 @permission_classes([IsAdminUser])
 def rt_temp(request):
-    recipes = Recipe.objects.all()
-    serializer = RecipeSerializer(recipes, many=True)
+    # recipes = Recipe.objects.all()
+    # serializer = RecipeSerializer(recipes, many=True)
     # recs = Recommendations.objects.all()
     # serializer = RecommendationsSerializer(recs, many=True)
+    categories = Categories.objects.all()
+    serializer = CategoriesSerializer(categories, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
