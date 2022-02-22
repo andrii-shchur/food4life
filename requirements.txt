@@ -9,3 +9,4 @@ requests
 bs4
 recipe_scrapers
 drf-yasg
+django-cors-headers
