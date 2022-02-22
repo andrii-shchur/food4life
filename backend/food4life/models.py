@@ -105,3 +105,17 @@ class Recommendations(models.Model):
 
     def __str__(self):
         return f'from_recipe:{self.from_recipe} to_recipe:{self.to_recipe}'
+
+
+class Product(models.Model):
+    name = models.CharField(max_length=250, default='Default Product')
+    img_path = models.CharField(max_length=255, null=True)
+    calories = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(10000)], null=True)
+    proteins = models.CharField(max_length=50, null=True)
+    fats = models.CharField(max_length=50, null=True)
+    carbs = models.CharField(max_length=50, null=True)
+    price = models.DecimalField(max_digits=7, decimal_places=2)
+    category = models.CharField(max_length=250, null=True)
+
+    def __str__(self):
+        return self.name

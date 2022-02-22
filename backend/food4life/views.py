@@ -23,6 +23,13 @@ def get_user_id(request):
     return token_obj['user_id']
 
 
+def add_favorite_to_return(request, data):
+    result = list(data)
+    for el in result:
+        el['liked'] = True if Favourites.objects.filter(user_id=get_user_id(request), recipe_id=el['id']) else False
+    return result
+
+
 @api_view(['POST'])
 @permission_classes([])
 def rt_register(request):
@@ -54,7 +61,12 @@ def rt_predict(request):
         if form.is_valid():
             result = predict(request.FILES['file'])
             if result is not None:
-                return Response(result, status=status.HTTP_200_OK)
+                ids = []
+                for el in result:
+                    ids.append(el['obj_id']+1)
+                products = Product.objects.filter(id__in=ids)
+                serializer = ProductSerializer(products, many=True)
+                return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(form.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -78,7 +90,8 @@ def rt_search(request):
 
         recipes = Recipe.objects.filter(id__in=result)
         serializer = RecipeSerializer(recipes, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        result = add_favorite_to_return(request, serializer.data)
+        return Response(result, status=status.HTTP_200_OK)
 
 
 @api_view(['GET'])
@@ -96,6 +109,8 @@ def rt_recipe(request, recipe_id):
         result['ingredients'] = []
         for el in ingredients_serializer.data:
             result['ingredients'].append(el['description'])
+
+        result['liked'] = True if Favourites.objects.filter(user_id=get_user_id(request), recipe_id=rec.id) else False
         result['avg_rating'] = Recipe.objects.filter(pk=
                                                      recipe_id).annotate(avg=Avg('rating__rating')).values()[0]['avg']
 
@@ -103,17 +118,20 @@ def rt_recipe(request, recipe_id):
 
 
 @api_view(['GET'])
-def rt_time_recipes(request, time):
+def rt_time_recipes(request, time, count):
     if request.method == 'GET':
         if time not in [1, 2, 3]:
             return Response({'message': 'Invalid time'}, status=status.HTTP_400_BAD_REQUEST)
         time_to_str = {
             1: 'breakfast',
             2: 'brunch',
-            3: 'dinner'
+            3: 'dinner',
         }
-        q = Categories.objects.filter(name__icontains=time_to_str[time]).values()
+        q = Categories.objects.filter(name__icontains=time_to_str[time])[:count].values()
         result = [x['recipe_id'] for x in q]
+        recipes = Recipe.objects.filter(pk__in=result)
+        serializer = RecipeSerializer(recipes, many=True)
+        result = add_favorite_to_return(request, serializer.data)
         return Response(result, status=status.HTTP_200_OK)
 
 
@@ -122,7 +140,8 @@ def rt_hot_recipes(request, count):
     if request.method == 'GET':
         recipes = Recipe.objects.all().annotate(avg=Avg('rating__rating')).order_by('-avg')[:count]
         serializer = RecipeSerializer(recipes, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        result = add_favorite_to_return(request, serializer.data)
+        return Response(result, status=status.HTTP_200_OK)
 
 
 @api_view(['GET'])
@@ -134,7 +153,8 @@ def rt_similar_recipes(request):
         recommended = Recommendations.objects.filter(from_recipe=fav.recipe)
         user_recommendations.update(rec.to_recipe for rec in recommended)
     serializer = RecipeSerializer(list(user_recommendations)[:30], many=True)
-    return Response(serializer.data, status=status.HTTP_200_OK)
+    result = add_favorite_to_return(request, serializer.data)
+    return Response(result, status=status.HTTP_200_OK)
 
 
 @api_view(['DELETE', 'POST'])
@@ -239,9 +259,22 @@ def rt_temp(request):
     # serializer = RecipeSerializer(recipes, many=True)
     # recs = Recommendations.objects.all()
     # serializer = RecommendationsSerializer(recs, many=True)
-    categories = Categories.objects.all()
-    serializer = CategoriesSerializer(categories, many=True)
-    return Response(serializer.data, status=status.HTTP_200_OK)
+    products = Product.objects.all()
+    products.delete()
+    with request.FILES['file'] as f:
+        data = json.loads(f.read())
+        products = []
+        for el in data:
+            product = Product(id=el['id'], name=el['name'], img_path=el['img_path'], calories=el['calories'],
+                              proteins=el['proteins'], fats=el['fats'], carbs=el['carbs'], price=el['price'],
+                              category=el['category'])
+            products.append(product)
+        try:
+            Product.objects.bulk_create(products)
+        except Exception as e:
+            print(e)
+
+    return Response()
 
 
 # development purposes only.

@@ -43,3 +43,9 @@ class RecommendationsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Recommendations
         fields = ('id', 'from_recipe', 'to_recipe',)
+
+
+class ProductSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Product
+        fields = ('name', 'img_path', 'calories', 'proteins', 'fats', 'carbs', 'price', 'category',)
