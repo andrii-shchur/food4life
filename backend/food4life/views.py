@@ -259,20 +259,14 @@ def rt_temp(request):
     # serializer = RecipeSerializer(recipes, many=True)
     # recs = Recommendations.objects.all()
     # serializer = RecommendationsSerializer(recs, many=True)
-    products = Product.objects.all()
-    products.delete()
+    # products = Product.objects.all()
+    # products.delete()
     with request.FILES['file'] as f:
         data = json.loads(f.read())
-        products = []
-        for el in data:
-            product = Product(id=el['id'], name=el['name'], img_path=el['img_path'], calories=el['calories'],
-                              proteins=el['proteins'], fats=el['fats'], carbs=el['carbs'], price=el['price'],
-                              category=el['category'])
-            products.append(product)
-        try:
-            Product.objects.bulk_create(products)
-        except Exception as e:
-            print(e)
+        for i in range(1, 25):
+            product = Product.objects.get(pk=i)
+            product.img_path = data[i-1]['img_path']
+            product.save()
 
     return Response()
 
